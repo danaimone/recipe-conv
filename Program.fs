@@ -201,7 +201,17 @@ module Conversion =
             img
             |> Option.map (System.Convert.FromBase64String >> Hash.sha256)
             |> Option.defaultValue null }
+open System
 
-Mela.listRecipes "samples/mela/MelaExport.melarecipes"
-|> Seq.map (Conversion.melaToPaprika)
-|> Paprika.writeExportArchive "out/pap.paprikarecipes"
+[<EntryPoint>]
+let main argv =
+    // Expect: <input .melarecipes> <output .paprikarecipes>
+    if argv.Length <> 2 then
+        printfn "Usage: recipe-conv <input.melarecipes> <output.paprikarecipes>"
+        1
+    else
+        Mela.listRecipes argv.[0]
+        |> Seq.map Conversion.melaToPaprika
+        |> Paprika.writeExportArchive argv.[1]
+        0
+

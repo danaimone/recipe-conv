@@ -1,32 +1,94 @@
 # recipe-conv
 
-A small program for converting exported recipe data from [Mela](https://apps.apple.com/us/app/mela-recipe-manager/id1548466041)
-to [Paprika](https://www.paprikaapp.com/).
+Convert a **Mela** export (`*.melarecipes`) into a **Paprika** archive (`*.paprikarecipes`) that Crouton (or Paprika) can import.
 
-My original use case was wanting to try [Crouton](https://apps.apple.com/us/app/crouton-cooking-companion/id1461650987) on iOS but all
-my recipe data was stuck in Mela.
+---
 
-Mela offers a bulk recipe export feature, but can only export data in its own `.melarecipes` format.
-Crouton offers a bulk import feature, but can only import data from its own `.zip` export _or_ from Paprika's `.paprikarecipes` export.
+## Contents
 
-Crouton's recipe representation is fairly complicated and requires being able to identify and parse units of measure.
-To avoid taking on this complexity (read: out of sheer laziness) I instead implemented a Mela -> Paprika conversion tool and relied on Crouton's "import from Paprika" feature.
+| file | language | purpose |
+|------|----------|---------|
+| `Program.fs` | F# / .NET | Fast, type‑safe converter (original). |
+| `convert.py` | Python 3 | Zero‑build alternative; handy when you don’t want .NET. |
 
-Note: Crouton unfortunately does not explode instructions into steps when importing a Paprika archive.
+---
 
-# File formats
+## 1 · Prerequisites
 
-## Paprika
+| route | requirements |
+|-------|--------------|
+| **F#** | .NET 6 / 7 / 8 SDK (`dotnet --version` ≥ 6). |
+| **Python** | Python 3.8+ (3.11+ recommended). Optional: `pip install tqdm` for progress bar. |
 
-`.paprikarecipes` is a zip archive containing `.paprikarecipe` files.
-Each recipe file is a gzip-compressed JSON document.
+---
 
-## Mela
+## 2 · Using the F# converter
 
-`.melarecipes` is a zip archive containing `.melarecipe` files.
-Each recipe file is a JSON document, no compression.
+```bash
+# clone & build (Release config)
+git clone https://github.com/<your‑fork>/recipe-conv.git
+cd recipe-conv
+dotnet build -c Release
 
-## Crouton
+# run
+dotnet run -c Release -- ~/Downloads/Recipes.melarecipes out/all.paprikarecipes
+```
 
-`.zip` is a zip archive containing `.crumb` files.
-Each recipe file a JSON document, no compression.
+*The output folder must exist (`mkdir -p out`) or use a path in the current directory.*
+
+Want a single self‑contained DLL?
+
+```bash
+dotnet publish -c Release -o publish
+# then
+dotnet publish/recipe-conv.dll <input.melarecipes> <output.paprikarecipes>
+```
+
+---
+
+## 3 · Using the Python converter
+
+```bash
+# optional: virtualenv
+python -m venv .venv && source .venv/bin/activate
+
+# progress bar
+pip install tqdm
+
+# run
+python convert.py ~/Downloads/Recipes.melarecipes out/all.paprikarecipes
+```
+
+No external deps besides `tqdm`; the script drops it if not present.
+
+---
+
+## 4 · Import into Crouton / Paprika
+
+1. **Settings › Import › Paprika**  
+2. Select the `*.paprikarecipes` file you produced.  
+3. Crouton iterates through each recipe and adds it to your library.
+
+---
+
+## 5 · Troubleshooting
+
+| symptom | fix |
+|---------|-----|
+| `DirectoryNotFoundException` | Create the **output folder** first or specify an existing path. |
+| `FS0058` indentation errors | Use the bundled `Program.fs` or add `<LangVersion>7.0</LangVersion>` to the fsproj. |
+| Python `IndexError` on images | Pull latest `convert.py` (handles empty `images` arrays). |
+
+---
+
+## 6 · Credits
+
+Originally created by **Chris Nola** — see the upstream repo <https://github.com/chrnola/recipe-conv>. This fork cleans up CLI handling, adds Python support, and updates docs, but the core idea and F# implementation are his. 🙌
+
+---
+
+## 7 · License
+
+MIT — see `LICENSE`.
+
+
